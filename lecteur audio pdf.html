@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LECTURE DE LIVRE EN AUDIO</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f8fafc;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: -apple-system, system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background: var(--card);
+            padding: 20px;
+            border-radius: 25px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        h1 { font-size: 1.1rem; text-align: center; margin-bottom: 20px; color: #818cf8; text-transform: uppercase; }
+
+        .upload-box {
+            border: 2px dashed #334155;
+            border-radius: 15px;
+            padding: 30px 10px;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.4);
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .setting-card {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 15px;
+            margin-bottom: 12px;
+        }
+
+        label { display: block; font-size: 0.7rem; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; }
+
+        select {
+            width: 100%;
+            padding: 10px;
+            background: #1e293b;
+            color: white;
+            border: 1px solid #334155;
+            border-radius: 8px;
+        }
+
+        .range-group { display: flex; align-items: center; gap: 10px; }
+        input[type="range"] { flex: 1; accent-color: var(--primary); }
+        .val-display { min-width: 35px; font-weight: bold; color: var(--primary); text-align: right; }
+
+        .main-btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .btn-play { background: var(--primary); color: white; }
+        .controls-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-sec { background: #334155; color: white; padding: 12px; border-radius: 12px; border: none; font-weight: bold; }
+
+        #status { text-align: center; font-size: 0.75rem; margin-top: 15px; color: #2dd4bf; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>LECTURE DE LIVRE EN AUDIO</h1>
+
+    <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+        <span id="fileName">📁 Choisir un PDF</span>
+        <input type="file" id="fileInput" accept="application/pdf" style="display:none">
+    </div>
+
+    <!-- Navigation des pages -->
+    <div class="setting-card">
+        <label>Aller à la page : <span id="pageVal" class="val-display">0</span></label>
+        <div class="range-group">
+            <input type="range" id="pageRange" min="0" max="0" value="0">
+        </div>
+    </div>
+
+    <div class="setting-card">
+        <label>Qualité de la voix</label>
+        <select id="voiceSelect"></select>
+    </div>
+
+    <div class="setting-card">
+        <label>Vitesse : <span id="speedVal" class="val-display">1.0x</span></label>
+        <div class="range-group">
+            <span>0.5</span>
+            <input type="range" id="speedRange" min="0.5" max="3.0" value="1.0" step="0.1">
+            <span>3.0</span>
+        </div>
+    </div>
+
+    <button class="btn-play main-btn" id="playBtn">▶ LANCER LA LECTURE</button>
+    
+    <div class="controls-row">
+        <button class="btn-sec" id="pauseBtn">⏸ PAUSE</button>
+        <button class="btn-sec" id="stopBtn" style="color: #f87171;">⏹ STOP</button>
+    </div>
+
+    <div id="status">En attente de fichier...</div>
+</div>
+
+<script>
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+    let pagesContent = []; // Stocke le texte page par page
+    const synth = window.speechSynthesis;
+
+    // Charger les voix
+    function loadVoices() {
+        const voices = synth.getVoices();
+        const select = document.getElementById('voiceSelect');
+        const frVoices = voices.filter(v => v.lang.startsWith('fr'));
+        const list = frVoices.length > 0 ? frVoices : voices;
+        select.innerHTML = list.map(v => `<option value="${v.name}">${v.name}</option>`).join('');
+    }
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+
+    // Vitesse x3
+    const speedRange = document.getElementById('speedRange');
+    speedRange.oninput = () => document.getElementById('speedVal').innerText = parseFloat(speedRange.value).toFixed(1) + 'x';
+
+    // Navigation Pages
+    const pageRange = document.getElementById('pageRange');
+    pageRange.oninput = () => document.getElementById('pageVal').innerText = pageRange.value;
+
+    // Traitement PDF
+    document.getElementById('fileInput').onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        document.getElementById('fileName').innerText = file.name;
+        const status = document.getElementById('status');
+        status.innerText = "Analyse...";
+
+        const reader = new FileReader();
+        reader.onload = async function() {
+            const pdf = await pdfjsLib.getDocument({data: new Uint8Array(this.result)}).promise;
+            pagesContent = [];
+            
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                pagesContent.push(content.items.map(s => s.str).join(" "));
+                status.innerText = `Chargement : ${Math.round((i/pdf.numPages)*100)}%`;
+            }
+            
+            pageRange.max = pdf.numPages;
+            pageRange.min = 1;
+            pageRange.value = 1;
+            document.getElementById('pageVal').innerText = "1";
+            status.innerText = "✓ Livre de " + pdf.numPages + " pages prêt";
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    // Lecture à partir de la page choisie
+    document.getElementById('playBtn').onclick = () => {
+        if (pagesContent.length === 0) return alert("Choisissez un PDF");
+        if (synth.paused) { synth.resume(); return; }
+
+        synth.cancel();
+        
+        // On récupère le texte à partir de la page sélectionnée sur le curseur
+        const startPage = parseInt(pageRange.value) - 1;
+        const textToRead = pagesContent.slice(startPage).join(" ");
+
+        const utter = new SpeechSynthesisUtterance(textToRead);
+        utter.voice = synth.getVoices().find(v => v.name === document.getElementById('voiceSelect').value);
+        utter.rate = parseFloat(speedRange.value);
+        
+        utter.onstart = () => document.getElementById('status').innerText = "🔊 Lecture (Page " + pageRange.value + "...)";
+        utter.onend = () => document.getElementById('status').innerText = "✓ Fin de lecture";
+        
+        synth.speak(utter);
+    };
+
+    document.getElementById('pauseBtn').onclick = () => synth.pause();
+    document.getElementById('stopBtn').onclick = () => synth.cancel();
+</script>
+
+</body>
+</html>
