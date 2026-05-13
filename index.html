@@ -3,212 +3,1011 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>LECTURE DE LIVRE EN AUDIO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <style>
         :root {
-            --primary: #6366f1;
+            --primary: #818cf8;
+            --primary-dark: #6366f1;
+            --accent: #2dd4bf;
             --bg: #0f172a;
             --card: #1e293b;
-            --text: #f8fafc;
+            --glass: rgba(255, 255, 255, 0.05);
+            --text-dim: #94a3b8;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            touch-action: manipulation;
+        }
 
         body {
-            font-family: -apple-system, system-ui, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            color: #f8fafc;
             margin: 0;
             padding: 15px;
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            justify-content: center;
             min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .container {
+        .app-card {
             width: 100%;
             max-width: 450px;
             background: var(--card);
-            padding: 20px;
-            border-radius: 25px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            padding: 25px;
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass);
+            animation: fadeIn 0.8s ease-out;
         }
 
-        h1 { font-size: 1.1rem; text-align: center; margin-bottom: 20px; color: #818cf8; text-transform: uppercase; }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(20px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
 
-        .upload-box {
-            border: 2px dashed #334155;
-            border-radius: 15px;
-            padding: 30px 10px;
+        h1 {
+            font-size: 1.4rem;
             text-align: center;
-            background: rgba(15, 23, 42, 0.4);
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 25px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .book-visual {
+            width: 100px;
+            height: 140px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            margin: 0 auto 25px;
+            border-radius: 4px 12px 12px 4px;
+            position: relative;
+            box-shadow: 8px 8px 20px rgba(0,0,0,0.4);
+            transition: all 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+        }
+
+        .book-visual::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        .is-reading .book-visual {
+            animation: pulseBook 2s infinite ease-in-out;
+            box-shadow: 0 0 40px rgba(129, 140, 248, 0.6);
+        }
+
+        @keyframes pulseBook {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.08) rotate(3deg); }
+        }
+
+        .upload-zone {
+            border: 2px dashed rgba(129, 140, 248, 0.4);
+            padding: 25px 20px;
+            border-radius: 20px;
+            text-align: center;
+            background: var(--glass);
             margin-bottom: 20px;
+            transition: all 0.3s ease;
             cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
 
-        .setting-card {
-            background: #0f172a;
-            padding: 12px;
-            border-radius: 15px;
-            margin-bottom: 12px;
+        .upload-zone:active { 
+            transform: scale(0.96); 
+            background: rgba(129, 140, 248, 0.15);
+            border-color: var(--primary);
         }
 
-        label { display: block; font-size: 0.7rem; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-transform: uppercase; }
+        .upload-zone .icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            display: block;
+        }
 
-        select {
+        .upload-zone .label {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        .upload-zone .filename {
+            font-size: 0.8rem;
+            color: var(--primary);
+            margin-top: 5px;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .control-panel {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .setting-row { 
+            margin-bottom: 20px; 
+        }
+        .setting-row:last-child { 
+            margin-bottom: 0; 
+        }
+
+        label { 
+            display: block; 
+            font-size: 0.7rem; 
+            color: var(--text-dim); 
+            margin-bottom: 10px; 
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select, input[type="range"] {
             width: 100%;
-            padding: 10px;
-            background: #1e293b;
+            background: #0f172a;
             color: white;
             border: 1px solid #334155;
-            border-radius: 8px;
-        }
-
-        .range-group { display: flex; align-items: center; gap: 10px; }
-        input[type="range"] { flex: 1; accent-color: var(--primary); }
-        .val-display { min-width: 35px; font-weight: bold; color: var(--primary); text-align: right; }
-
-        .main-btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 15px;
+            border-radius: 12px;
             font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            margin-bottom: 10px;
+            outline: none;
         }
 
-        .btn-play { background: var(--primary); color: white; }
-        .controls-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-sec { background: #334155; color: white; padding: 12px; border-radius: 12px; border: none; font-weight: bold; }
+        select {
+            padding: 14px 12px;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23818cf8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            padding-right: 35px;
+        }
 
-        #status { text-align: center; font-size: 0.75rem; margin-top: 15px; color: #2dd4bf; }
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 8px;
+            padding: 0;
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(129, 140, 248, 0.5);
+            border: 2px solid white;
+        }
+
+        .value-display {
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .play-btn {
+            width: 100%;
+            padding: 20px;
+            border-radius: 20px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .play-btn:active { 
+            transform: scale(0.97); 
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .play-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .secondary-btns { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+        }
+
+        .btn-s { 
+            padding: 16px; 
+            border-radius: 16px; 
+            border: none; 
+            background: #334155; 
+            color: white; 
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-s:active { 
+            transform: scale(0.95); 
+            background: #475569;
+        }
+
+        .btn-s:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-s.danger {
+            background: rgba(248, 113, 113, 0.15);
+            color: #f87171;
+        }
+
+        .btn-s.danger:active {
+            background: rgba(248, 113, 113, 0.25);
+        }
+
+        #status { 
+            text-align: center; 
+            font-size: 0.85rem; 
+            margin-top: 20px; 
+            color: var(--accent); 
+            font-weight: 600;
+            min-height: 24px;
+            line-height: 1.4;
+        }
+
+        .progress-info {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .ios-hint {
+            background: rgba(45, 212, 191, 0.1);
+            border: 1px solid rgba(45, 212, 191, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .ios-hint strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.8rem;
+        }
+
+        /* Animation de chargement */
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+
+        /* Masquer la barre de défilement mais garder la fonctionnalité */
+        body::-webkit-scrollbar {
+            display: none;
+        }
+        body {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>LECTURE DE LIVRE EN AUDIO</h1>
+<div class="app-card" id="app">
+    <h1>📚 LECTURE AUDIO</h1>
+    
+    <div class="book-visual" id="bookIcon">📖</div>
 
-    <div class="upload-box" onclick="document.getElementById('fileInput').click()">
-        <span id="fileName">📁 Choisir un PDF</span>
+    <div class="ios-hint" id="iosHint" style="display:none;">
+        <strong>💡 Astuce iPhone</strong>
+        Pour de meilleures voix : Réglages → Accessibilité → Contenu prononcé → Voix → Télécharger "Thomas (Premium)"
+    </div>
+
+    <div class="upload-zone" id="uploadZone">
+        <span class="icon">📄</span>
+        <span class="label" id="fileLabel">Appuyez pour charger un PDF</span>
+        <span class="filename" id="fileName"></span>
         <input type="file" id="fileInput" accept="application/pdf" style="display:none">
     </div>
 
-    <!-- Navigation des pages -->
-    <div class="setting-card">
-        <label>Aller à la page : <span id="pageVal" class="val-display">0</span></label>
-        <div class="range-group">
-            <input type="range" id="pageRange" min="0" max="0" value="0">
+    <div class="control-panel">
+        <div class="setting-row">
+            <label>Page de départ : <span class="value-display" id="pageVal">1</span></label>
+            <input type="range" id="pageRange" min="1" max="1" value="1" disabled>
+        </div>
+
+        <div class="setting-row">
+            <label>Qualité de la voix</label>
+            <select id="voiceSelect"></select>
+        </div>
+
+        <div class="setting-row">
+            <label>Vitesse : <span class="value-display" id="speedVal">1.0x</span></label>
+            <input type="range" id="speedRange" min="0.5" max="2.0" value="1.0" step="0.1">
         </div>
     </div>
 
-    <div class="setting-card">
-        <label>Qualité de la voix</label>
-        <select id="voiceSelect"></select>
-    </div>
-
-    <div class="setting-card">
-        <label>Vitesse : <span id="speedVal" class="val-display">1.0x</span></label>
-        <div class="range-group">
-            <span>0.5</span>
-            <input type="range" id="speedRange" min="0.5" max="3.0" value="1.0" step="0.1">
-            <span>3.0</span>
-        </div>
-    </div>
-
-    <button class="btn-play main-btn" id="playBtn">▶ LANCER LA LECTURE</button>
+    <button class="play-btn" id="playBtn" disabled>▶ COMMENCER</button>
     
-    <div class="controls-row">
-        <button class="btn-sec" id="pauseBtn">⏸ PAUSE</button>
-        <button class="btn-sec" id="stopBtn" style="color: #f87171;">⏹ STOP</button>
+    <div class="secondary-btns">
+        <button class="btn-s" id="pauseBtn" disabled>⏸ Pause</button>
+        <button class="btn-s danger" id="stopBtn" disabled>⏹ Arrêt</button>
     </div>
 
-    <div id="status">En attente de fichier...</div>
+    <div id="status">Chargez un PDF pour commencer</div>
+    <div class="progress-info" id="progressInfo"></div>
 </div>
 
 <script>
+    // Configuration PDF.js
     const pdfjsLib = window['pdfjs-dist/build/pdf'];
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-
-    let pagesContent = []; // Stocke le texte page par page
+    
+    // Variables globales
+    let pagesContent = [];
+    let currentPageIndex = 0;
+    let currentSentenceIndex = 0;
+    let sentences = [];
+    let isPlaying = false;
+    let isPaused = false;
+    
     const synth = window.speechSynthesis;
+    const app = document.getElementById('app');
+    const playBtn = document.getElementById('playBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const status = document.getElementById('status');
+    const progressInfo = document.getElementById('progressInfo');
+    const fileInput = document.getElementById('fileInput');
+    const uploadZone = document.getElementById('uploadZone');
+    const pageRange = document.getElementById('pageRange');
 
-    // Charger les voix
-    function loadVoices() {
+    // Détection iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+        document.getElementById('iosHint').style.display = 'block';
+    }
+
+    // Initialisation des voix avec retry pour iOS
+    function initVoices() {
         const voices = synth.getVoices();
+        if (voices.length === 0) return;
+        
         const select = document.getElementById('voiceSelect');
         const frVoices = voices.filter(v => v.lang.startsWith('fr'));
-        const list = frVoices.length > 0 ? frVoices : voices;
-        select.innerHTML = list.map(v => `<option value="${v.name}">${v.name}</option>`).join('');
+        const voicesToUse = frVoices.length > 0 ? frVoices : voices;
+        
+        // Trier : premium/enhanced d'abord
+        voicesToUse.sort((a, b) => {
+            const aPremium = a.name.includes('Premium') || a.name.includes('Enhanced') || a.name.includes('Améliorée');
+            const bPremium = b.name.includes('Premium') || b.name.includes('Enhanced') || b.name.includes('Améliorée');
+            return bPremium - aPremium;
+        });
+        
+        select.innerHTML = voicesToUse.map(v => {
+            let label = v.name;
+            if (label.includes('Microsoft')) label = label.replace('Microsoft', 'HD');
+            const isPremium = v.name.includes('Premium') || v.name.includes('Enhanced');
+            return `<option value="${v.name}">${label}${isPremium ? ' ⭐' : ''}</option>`;
+        }).join('');
     }
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-    loadVoices();
 
-    // Vitesse x3
-    const speedRange = document.getElementById('speedRange');
-    speedRange.oninput = () => document.getElementById('speedVal').innerText = parseFloat(speedRange.value).toFixed(1) + 'x';
+    // iOS charge les voix de manière asynchrone
+    if (synth.onvoiceschanged !== undefined) {
+        synth.onvoiceschanged = initVoices;
+    }
+    // Retry pour iOS
+    setTimeout(initVoices, 100);
+    setTimeout(initVoices, 500);
+    setTimeout(initVoices, 1000);
 
-    // Navigation Pages
-    const pageRange = document.getElementById('pageRange');
-    pageRange.oninput = () => document.getElementById('pageVal').innerText = pageRange.value;
+    // Gestion du upload zone (touch friendly)
+    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        fileInput.click();
+    });
+
+    // Vitesse
+    document.getElementById('speedRange').oninput = (e) => {
+        document.getElementById('speedVal').innerText = e.target.value + 'x';
+    };
+
+    // Page de départ
+    pageRange.oninput = (e) => {
+        document.getElementById('pageVal').innerText = e.target.value;
+    };
 
     // Traitement PDF
-    document.getElementById('fileInput').onchange = async (e) => {
+    fileInput.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
         
         document.getElementById('fileName').innerText = file.name;
-        const status = document.getElementById('status');
-        status.innerText = "Analyse...";
-
-        const reader = new FileReader();
-        reader.onload = async function() {
-            const pdf = await pdfjsLib.getDocument({data: new Uint8Array(this.result)}).promise;
-            pagesContent = [];
+        document.getElementById('fileLabel').innerText = 'PDF chargé';
+        status.innerHTML = '<span class="loading-dots">Analyse en cours</span>';
+        
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
             
+            pagesContent = [];
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const content = await page.getTextContent();
-                pagesContent.push(content.items.map(s => s.str).join(" "));
+                const text = content.items.map(s => s.str).join(' ').replace(/\s+/g, ' ').trim();
+                pagesContent.push(text);
                 status.innerText = `Chargement : ${Math.round((i/pdf.numPages)*100)}%`;
             }
             
             pageRange.max = pdf.numPages;
             pageRange.min = 1;
             pageRange.value = 1;
-            document.getElementById('pageVal').innerText = "1";
-            status.innerText = "✓ Livre de " + pdf.numPages + " pages prêt";
+            pageRange.disabled = false;
+            document.getElementById('pageVal').innerText = '1';
+            
+            playBtn.disabled = false;
+            status.innerText = `✓ ${pdf.numPages} pages prêtes`;
+            progressInfo.innerText = 'Appuyez sur ▶ pour commencer';
+            
+        } catch (err) {
+            status.innerText = '❌ Erreur : ' + err.message;
+            console.error(err);
+        }
+    };
+
+    // Découper le texte en phrases (meilleure gestion que par mots)
+    function splitIntoSentences(text) {
+        // Gestion des abréviations courantes en français
+        const abbreviations = ['M.', 'Mme', 'Dr', 'Prof', 'etc', 'p.', 'pp.', 'vol', 'chap'];
+        let protected = text;
+        
+        abbreviations.forEach((abbr, i) => {
+            protected = protected.replace(new RegExp(abbr + '\\.', 'g'), abbr + '##POINT' + i + '##');
+        });
+        
+        // Split par points, points d'interrogation, exclamation
+        const parts = protected.split(/(?<=[.!?])\s+/);
+        
+        // Restaurer les points dans les abréviations
+        return parts.map(s => {
+            let restored = s;
+            abbreviations.forEach((abbr, i) => {
+                restored = restored.replace(new RegExp(abbr + '##POINT' + i + '##', 'g'), abbr + '.');
+            });
+            return restored.trim();
+        }).filter(s => s.length > 0);
+    }
+
+    // Préparer la lecture à partir d'une page
+    function prepareSentences(startPageIndex) {
+        const allText = pagesContent.slice(startPageIndex).join(' ');
+        sentences = splitIntoSentences(allText);
+        currentPageIndex = startPageIndex;
+        currentSentenceIndex = 0;
+    }
+
+    // Obtenir la page actuelle basée sur la position dans les phrases
+    function getCurrentPage() {
+        if (sentences all 0.2s;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .play-btn:active { 
+            transform: scale(0.97); 
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .play-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .secondary-btns { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+        }
+
+        .btn-s { 
+            padding: 16px; 
+            border-radius: 16px; 
+            border: none; 
+            background: #334155; 
+            color: white; 
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-s:active { 
+            transform: scale(0.95); 
+            background: #475569;
+        }
+
+        .btn-s:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-s.danger {
+            background: rgba(248, 113, 113, 0.15);
+            color: #f87171;
+        }
+
+        .btn-s.danger:active {
+            background: rgba(248, 113, 113, 0.25);
+        }
+
+        #status { 
+            text-align: center; 
+            font-size: 0.85rem; 
+            margin-top: 20px; 
+            color: var(--accent); 
+            font-weight: 600;
+            min-height: 24px;
+            line-height: 1.4;
+        }
+
+        .progress-info {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .ios-hint {
+            background: rgba(45, 212, 191, 0.1);
+            border: 1px solid rgba(45, 212, 191, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .ios-hint strong {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 0.8rem;
+        }
+
+        /* Animation de chargement */
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0% { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+
+        /* Masquer la barre de défilement mais garder la fonctionnalité */
+        body::-webkit-scrollbar {
+            display: none;
+        }
+        body {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-card" id="app">
+    <h1>📚 LECTURE AUDIO</h1>
+    
+    <div class="book-visual" id="bookIcon">📖</div>
+
+    <div class="ios-hint" id="iosHint" style="display:none;">
+        <strong>💡 Astuce iPhone</strong>
+        Pour de meilleures voix : Réglages → Accessibilité → Contenu prononcé → Voix → Télécharger "Thomas (Premium)"
+    </div>
+
+    <div class="upload-zone" id="uploadZone">
+        <span class="icon">📄</span>
+        <span class="label" id="fileLabel">Appuyez pour charger un PDF</span>
+        <span class="filename" id="fileName"></span>
+        <input type="file" id="fileInput" accept="application/pdf" style="display:none">
+    </div>
+
+    <div class="control-panel">
+        <div class="setting-row">
+            <label>Page de départ : <span class="value-display" id="pageVal">1</span></label>
+            <input type="range" id="pageRange" min="1" max="1" value="1" disabled>
+        </div>
+
+        <div class="setting-row">
+            <label>Qualité de la voix</label>
+            <select id="voiceSelect"></select>
+        </div>
+
+        <div class="setting-row">
+            <label>Vitesse : <span class="value-display" id="speedVal">1.0x</span></label>
+            <input type="range" id="speedRange" min="0.5" max="2.0" value="1.0" step="0.1">
+        </div>
+    </div>
+
+    <button class="play-btn" id="playBtn" disabled>▶ COMMENCER</button>
+    
+    <div class="secondary-btns">
+        <button class="btn-s" id="pauseBtn" disabled>⏸ Pause</button>
+        <button class="btn-s danger" id="stopBtn" disabled>⏹ Arrêt</button>
+    </div>
+
+    <div id="status">Chargez un PDF pour commencer</div>
+    <div class="progress-info" id="progressInfo"></div>
+</div>
+
+<script>
+    // Configuration PDF.js
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    
+    // Variables globales
+    let pagesContent = [];
+    let currentPageIndex = 0;
+    let currentSentenceIndex = 0;
+    let sentences = [];
+    let isPlaying = false;
+    let isPaused = false;
+    
+    const synth = window.speechSynthesis;
+    const app = document.getElementById('app');
+    const playBtn = document.getElementById('playBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const status = document.getElementById('status');
+    const progressInfo = document.getElementById('progressInfo');
+    const fileInput = document.getElementById('fileInput');
+    const uploadZone = document.getElementById('uploadZone');
+    const pageRange = document.getElementById('pageRange');
+
+    // Détection iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS) {
+        document.getElementById('iosHint').style.display = 'block';
+    }
+
+    // Initialisation des voix avec retry pour iOS
+    function initVoices() {
+        const voices = synth.getVoices();
+        if (voices.length === 0) return;
+        
+        const select = document.getElementById('voiceSelect');
+        const frVoices = voices.filter(v => v.lang.startsWith('fr'));
+        const voicesToUse = frVoices.length > 0 ? frVoices : voices;
+        
+        // Trier : premium/enhanced d'abord
+        voicesToUse.sort((a, b) => {
+            const aPremium = a.name.includes('Premium') || a.name.includes('Enhanced') || a.name.includes('Améliorée');
+            const bPremium = b.name.includes('Premium') || b.name.includes('Enhanced') || b.name.includes('Améliorée');
+            return bPremium - aPremium;
+        });
+        
+        select.innerHTML = voicesToUse.map(v => {
+            let label = v.name;
+            if (label.includes('Microsoft')) label = label.replace('Microsoft', 'HD');
+            const isPremium = v.name.includes('Premium') || v.name.includes('Enhanced');
+            return `<option value="${v.name}">${label}${isPremium ? ' ⭐' : ''}</option>`;
+        }).join('');
+    }
+
+    // iOS charge les voix de manière asynchrone
+    if (synth.onvoiceschanged !== undefined) {
+        synth.onvoiceschanged = initVoices;
+    }
+    // Retry pour iOS
+    setTimeout(initVoices, 100);
+    setTimeout(initVoices, 500);
+    setTimeout(initVoices, 1000);
+
+    // Gestion du upload zone (touch friendly)
+    uploadZone.addEventListener('click', () => fileInput.click());
+    uploadZone.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        fileInput.click();
+    });
+
+    // Vitesse
+    document.getElementById('speedRange').oninput = (e) => {
+        document.getElementById('speedVal').innerText = e.target.value + 'x';
+    };
+
+    // Page de départ
+    pageRange.oninput = (e) => {
+        document.getElementById('pageVal').innerText = e.target.value;
+    };
+
+    // Traitement PDF
+    fileInput.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        document.getElementById('fileName').innerText = file.name;
+        document.getElementById('fileLabel').innerText = 'PDF chargé';
+        status.innerHTML = '<span class="loading-dots">Analyse en cours</span>';
+        
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+            
+            pagesContent = [];
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                const text = content.items.map(s => s.str).join(' ').replace(/\s+/g, ' ').trim();
+                pagesContent.push(text);
+                status.innerText = `Chargement : ${Math.round((i/pdf.numPages)*100)}%`;
+            }
+            
+            pageRange.max = pdf.numPages;
+            pageRange.min = 1;
+            pageRange.value = 1;
+            pageRange.disabled = false;
+            document.getElementById('pageVal').innerText = '1';
+            
+            playBtn.disabled = false;
+            status.innerText = `✓ ${pdf.numPages} pages prêtes`;
+            progressInfo.innerText = 'Appuyez sur ▶ pour commencer';
+            
+        } catch (err) {
+            status.innerText = '❌ Erreur : ' + err.message;
+            console.error(err);
+        }
+    };
+
+    // Découper le texte en phrases (meilleure gestion que par mots)
+    function splitIntoSentences(text) {
+        // Gestion des abréviations courantes en français
+        const abbreviations = ['M.', 'Mme', 'Dr', 'Prof', 'etc', 'p.', 'pp.', 'vol', 'chap'];
+        let protected = text;
+        
+        abbreviations.forEach((abbr, i) => {
+            protected = protected.replace(new RegExp(abbr + '\\.', 'g'), abbr + '##POINT' + i + '##');
+        });
+        
+        // Split par points, points d'interrogation, exclamation
+        const parts = protected.split(/(?<=[.!?])\s+/);
+        
+        // Restaurer les points dans les abréviations
+        return parts.map(s => {
+            let restored = s;
+            abbreviations.forEach((abbr, i) => {
+                restored = restored.replace(new RegExp(abbr + '##POINT' + i + '##', 'g'), abbr + '.');
+            });
+            return restored.trim();
+        }).filter(s => s.length > 0);
+    }
+
+    // Préparer la lecture à partir d'une page
+    function prepareSentences(startPageIndex) {
+        const allText = pagesContent.slice(startPageIndex).join(' ');
+        sentences = splitIntoSentences(allText);
+        currentPageIndex = startPageIndex;
+        currentSentenceIndex = 0;
+    }
+
+    // Obtenir la page actuelle basée sur la position dans les phrases
+    function getCurrentPage() {
+        if (sentences.length === 0) return 1;
+        const textBefore = sentences.slice(0, currentSentenceIndex).join(' ');
+        let charCount = 0;
+        for (let i = 0; i < currentPageIndex; i++) {
+            charCount += pagesContent[i].length;
+        }
+        // Estimation grossière mais fonctionnelle
+        const totalChars = pagesContent.slice(currentPageIndex).join(' ').length;
+        const readChars = textBefore.length;
+        return currentPageIndex + 1 + Math.floor((readChars / (totalChars || 1)) * (pagesContent.length - currentPageIndex));
+    }
+
+    // Lecture d'une phrase
+    function speakSentence() {
+        if (currentSentenceIndex >= sentences.length) {
+            stopReading();
+            status.innerText = '✓ Lecture terminée';
+            progressInfo.innerText = '';
+            return;
+        }
+
+        if (isPaused) return;
+
+        const sentence = sentences[currentSentenceIndex];
+        const utter = new SpeechSynthesisUtterance(sentence);
+        
+        const selectedVoice = document.getElementById('voiceSelect').value;
+        const voices = synth.getVoices();
+        utter.voice = voices.find(v => v.name === selectedVoice) || voices[0];
+        utter.rate = parseFloat(document.getElementById('speedRange').value);
+        utter.pitch = 1;
+        
+        // iOS : certains bugs avec le pitch
+        if (isIOS) utter.pitch = 1;
+
+        utter.onstart = () => {
+            isPlaying = true;
+            app.classList.add('is-reading');
+            playBtn.innerHTML = '▶ Reprendre';
+            pauseBtn.disabled = false;
+            stopBtn.disabled = false;
+            status.innerText = '🔊 Lecture en cours...';
+            
+            const currentPage = Math.min(getCurrentPage(), pagesContent.length);
+            progressInfo.innerText = `Page ${currentPage} / ${pagesContent.length}`;
         };
-        reader.readAsArrayBuffer(file);
-    };
 
-    // Lecture à partir de la page choisie
-    document.getElementById('playBtn').onclick = () => {
-        if (pagesContent.length === 0) return alert("Choisissez un PDF");
-        if (synth.paused) { synth.resume(); return; }
+        utter.onend = () => {
+            if (!isPaused) {
+                currentSentenceIndex++;
+                speakSentence();
+            }
+        };
 
-        synth.cancel();
-        
-        // On récupère le texte à partir de la page sélectionnée sur le curseur
-        const startPage = parseInt(pageRange.value) - 1;
-        const textToRead = pagesContent.slice(startPage).join(" ");
+        utter.onerror = (e) => {
+            if (e.error !== 'canceled' && e.error !== 'interrupted') {
+                console.error('Erreur TTS:', e);
+                status.innerText = '⚠️ Erreur audio';
+            }
+        };
 
-        const utter = new SpeechSynthesisUtterance(textToRead);
-        utter.voice = synth.getVoices().find(v => v.name === document.getElementById('voiceSelect').value);
-        utter.rate = parseFloat(speedRange.value);
-        
-        utter.onstart = () => document.getElementById('status').innerText = "🔊 Lecture (Page " + pageRange.value + "...)";
-        utter.onend = () => document.getElementById('status').innerText = "✓ Fin de lecture";
-        
         synth.speak(utter);
-    };
+    }
 
-    document.getElementById('pauseBtn').onclick = () => synth.pause();
-    document.getElementById('stopBtn').onclick = () => synth.cancel();
+    // Démarrer la lecture
+    function startReading() {
+        if (pagesContent.length === 0) return;
+        
+        // Si on reprend après une pause
+        if (isPaused && currentSentenceIndex > 0) {
+            isPaused = false;
+            speakSentence();
+            return;
+        }
+
+        // Nouvelle lecture
+        synth.cancel();
+        isPaused = false;
+        const startPage = parseInt(pageRange.value) - 1;
+        prepareSentences(startPage);
+        speakSentence();
+    }
+
+    // Pause (vraie pause iOS-compatible)
+    function pauseReading() {
+        isPaused = true;
+        synth.cancel(); // iOS ne gère pas bien pause()
+        app.classList.remove('is-reading');
+        status.innerText = '⏸ Pause';
+        playBtn.innerHTML = '▶ Reprendre';
+        progressInfo.innerText = `Reprise à la phrase ${currentSentenceIndex + 1}`;
+    }
+
+    // Arrêt complet
+    function stopReading() {
+        isPaused = false;
+        isPlaying = false;
+        synth.cancel();
+        currentSentenceIndex = 0;
+        app.classList.remove('is-reading');
+        playBtn.innerHTML = '▶ COMMENCER';
+        pauseBtn.disabled = true;
+        status.innerText = '⏹ Arrêté';
+        progressInfo.innerText = '';
+    }
+
+    // Event listeners
+    playBtn.onclick = startReading;
+    pauseBtn.onclick = pauseReading;
+    stopBtn.onclick = stopReading;
+
+    // Gestion du verrouillage d'écran iOS
+    if (isIOS && 'AudioContext' in window) {
+        const audioContext = new AudioContext();
+        document.addEventListener('touchstart', () => {
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }, { once: true });
+    }
+
+    // Empêcher la mise en veille pendant la lecture (iOS)
+    let wakeLock = null;
+    async function requestWakeLock() {
+        if ('wakeLock' in navigator) {
+            try {
+                wakeLock = await navigator.wakeLock.request('screen');
+            } catch (err) {
+                console.log('Wake Lock non supporté');
+            }
+        }
+    }
+
+    function releaseWakeLock() {
+        if (wakeLock) {
+            wakeLock.release();
+            wakeLock = null;
+        }
+    }
+
+    // Observer l'état de lecture pour le wake lock
+    const observer = new MutationObserver(() => {
+        if (app.classList.contains('is-reading')) {
+            requestWakeLock();
+        } else {
+            releaseWakeLock();
+        }
+    });
+    observer.observe(app, { attributes: true, attributeFilter: ['class'] });
+
+    // Gestion du mode silencieux iOS
+    window.addEventListener('focus', () => {
+        if (isPlaying && !isPaused && !synth.speaking) {
+            // Parfois iOS coupe l'audio au retour sur l'app
+            setTimeout(() => speakSentence(), 300);
+        }
+    });
+
+    // Initialisation
+    status.innerText = 'Chargez un PDF pour commencer';
 </script>
 
 </body>
