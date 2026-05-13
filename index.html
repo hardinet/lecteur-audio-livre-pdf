@@ -3,16 +3,25 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="AURA">
+    <meta name="theme-color" content="#0a0908">
+    <meta name="color-scheme" content="dark">
+    <meta name="format-detection" content="telephone=no">
     <title>AURA · Lecture Audio</title>
+    <!-- Favicon onglet Safari -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23161310'/%3E%3Ctext x='50' y='68' font-family='Georgia,serif' font-size='58' fill='%23d4a574' text-anchor='middle' font-style='italic'%3EA%3C/text%3E%3C/svg%3E">
+    <!-- Icône écran d'accueil iPhone (180x180 recommandé par Apple) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3CradialGradient id='bg' cx='30%25' cy='25%25'%3E%3Cstop offset='0%25' stop-color='%23211c17'/%3E%3Cstop offset='100%25' stop-color='%230a0908'/%3E%3C/radialGradient%3E%3ClinearGradient id='gold' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23f0d29a'/%3E%3Cstop offset='50%25' stop-color='%23d4a574'/%3E%3Cstop offset='100%25' stop-color='%238a6b4a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' fill='url(%23bg)'/%3E%3Crect x='14' y='14' width='152' height='152' rx='4' fill='none' stroke='%23d4a574' stroke-opacity='0.3' stroke-width='1'/%3E%3Ctext x='90' y='118' font-family='Georgia,Times,serif' font-size='105' fill='url(%23gold)' text-anchor='middle' font-style='italic' font-weight='600'%3EA%3C/text%3E%3Ctext x='90' y='148' font-family='Georgia,Times,serif' font-size='11' fill='%23d4a574' text-anchor='middle' letter-spacing='4'%3EAURA%3C/text%3E%3C/svg%3E">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
+            /* Couleurs sRGB par défaut */
             --gold: #d4a574;
             --gold-dim: #8a6b4a;
             --ink: #e8e3d8;
@@ -22,9 +31,24 @@
             --bg-1: #161310;
             --bg-2: #211c17;
             --danger: #c95757;
+            /* Safe areas iPhone 13 Pro Max (encoche + barre du bas) */
+            --sa-top: env(safe-area-inset-top, 0px);
+            --sa-bottom: env(safe-area-inset-bottom, 0px);
+            --sa-left: env(safe-area-inset-left, 0px);
+            --sa-right: env(safe-area-inset-right, 0px);
         }
 
 ```
+    /* Couleurs Display P3 pour Super Retina XDR - or plus profond */
+    @supports (color: color(display-p3 1 1 1)) {
+        :root {
+            --gold: color(display-p3 0.84 0.66 0.46);
+            --gold-dim: color(display-p3 0.55 0.43 0.30);
+            --ink: color(display-p3 0.91 0.89 0.85);
+            --paper: color(display-p3 0.96 0.94 0.88);
+        }
+    }
+
     * {
         box-sizing: border-box;
         -webkit-tap-highlight-color: transparent;
@@ -44,9 +68,14 @@
         font-family: 'Inter', -apple-system, sans-serif;
         color: var(--ink);
         min-height: 100vh;
+        min-height: 100dvh; /* iOS 16+ dynamic viewport */
         position: relative;
         -webkit-font-smoothing: antialiased;
-        padding: 20px 16px 60px;
+        padding:
+            calc(20px + var(--sa-top))
+            calc(16px + var(--sa-right))
+            calc(60px + var(--sa-bottom))
+            calc(16px + var(--sa-left));
         background:
             radial-gradient(ellipse at 20% 0%, rgba(212, 165, 116, 0.08), transparent 60%),
             radial-gradient(ellipse at 80% 100%, rgba(201, 169, 97, 0.06), transparent 60%),
@@ -79,6 +108,7 @@
         opacity: 0;
         animation: float-up 12s infinite linear;
         filter: blur(0.5px);
+        will-change: transform, opacity;
     }
     @keyframes float-up {
         0% { transform: translateY(110vh) translateX(0); opacity: 0; }
@@ -166,6 +196,8 @@
         transform-style: preserve-3d;
         transform: rotateY(-18deg) rotateX(8deg);
         transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        will-change: transform;
+        -webkit-transform: rotateY(-18deg) rotateX(8deg) translateZ(0);
     }
 
     .book.reading {
@@ -316,6 +348,7 @@
         display: none;
         overflow: hidden;
         border-radius: 4px 8px 8px 4px;
+        will-change: transform;
     }
 
     .turning-page.flipping {
@@ -824,8 +857,8 @@
 </div>
 
 <div class="ios-hint" id="iosHint">
-    <strong>Astuce iPhone</strong>
-    Réglages → Accessibilité → Contenu prononcé → Voix → Français → téléchargez <b>Thomas (Premium)</b> ou <b>Audrey (Premium)</b>
+    <strong>Astuce iPhone 13 Pro Max</strong>
+    Pour la meilleure voix possible : Réglages → Accessibilité → Contenu prononcé → Voix → Français → téléchargez <b>Daniel (Neural)</b> ou <b>Marie (Neural)</b> · iOS 17+ requis. Sinon, <b>Thomas (Premium)</b> reste excellent.
 </div>
 
 <label class="upload-zone" for="fileInput">
@@ -945,10 +978,11 @@
 
     function getVoiceQuality(voice) {
         const name = voice.name;
-        if (name.includes('Siri')) return 100;
+        // Voix Neural iOS 17+ (Daniel, Marie, Aurélie) = top qualité
+        if (name.includes('Neural')) return 100;
+        if (name.includes('Siri')) return 95;
         if (name.includes('Premium')) return 90;
         if (name.includes('Enhanced') || name.includes('Améliorée')) return 80;
-        if (name.includes('Neural')) return 70;
         if (name.includes('Google')) return 60;
         if (name.includes('Microsoft')) return 50;
         return 10;
@@ -967,7 +1001,8 @@
             const q = getVoiceQuality(v);
             let label = v.name.replace('Microsoft', '').replace('Google', '').trim();
             let badge = '';
-            if (q >= 90) badge = ' · Premium ★';
+            if (q >= 100) badge = ' · Neural ★★';
+            else if (q >= 90) badge = ' · Premium ★';
             else if (q >= 70) badge = ' · HD';
             else if (q >= 50) badge = ' · Standard';
             return `<option value="${v.name}">${label}${badge}</option>`;
@@ -1259,6 +1294,17 @@
     playBtn.onclick = startReading;
     pauseBtn.onclick = pauseReading;
     stopBtn.onclick = stopReading;
+
+    // === Haptic feedback (vibration légère sur iPhone) === //
+    function haptic(duration = 10) {
+        if ('vibrate' in navigator) {
+            navigator.vibrate(duration);
+        }
+    }
+    // Vibration discrète au tap sur les boutons principaux
+    [playBtn, pauseBtn, stopBtn, testBtn, prevPageBtn, nextPageBtn].forEach(btn => {
+        btn.addEventListener('touchstart', () => haptic(8), { passive: true });
+    });
 
     // === Wake lock === //
     let wakeLock = null;
