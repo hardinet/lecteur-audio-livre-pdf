@@ -1,1013 +1,1301 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>LECTURE DE LIVRE EN AUDIO</title>
+    <title>AURA · Lecture Audio</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #818cf8;
-            --primary-dark: #6366f1;
-            --accent: #2dd4bf;
-            --bg: #0f172a;
-            --card: #1e293b;
-            --glass: rgba(255, 255, 255, 0.05);
-            --text-dim: #94a3b8;
+            --gold: #d4a574;
+            --gold-dim: #8a6b4a;
+            --ink: #e8e3d8;
+            --ink-dim: #a8a294;
+            --paper: #f5efe0;
+            --bg-0: #0a0908;
+            --bg-1: #161310;
+            --bg-2: #211c17;
+            --danger: #c95757;
         }
 
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; 
-            touch-action: manipulation;
-        }
+```
+    * {
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        -webkit-user-select: none;
+        user-select: none;
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
-            color: #f8fafc;
-            margin: 0;
-            padding: 15px;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
+    html, body {
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        background: var(--bg-0);
+    }
 
-        .app-card {
-            width: 100%;
-            max-width: 450px;
-            background: var(--card);
-            padding: 25px;
-            border-radius: 32px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--glass);
-            animation: fadeIn 0.8s ease-out;
-        }
+    body {
+        font-family: 'Inter', -apple-system, sans-serif;
+        color: var(--ink);
+        min-height: 100vh;
+        position: relative;
+        -webkit-font-smoothing: antialiased;
+        padding: 20px 16px 60px;
+        background:
+            radial-gradient(ellipse at 20% 0%, rgba(212, 165, 116, 0.08), transparent 60%),
+            radial-gradient(ellipse at 80% 100%, rgba(201, 169, 97, 0.06), transparent 60%),
+            var(--bg-0);
+    }
 
-        @keyframes fadeIn { 
-            from { opacity: 0; transform: translateY(20px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
+    body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.35;
+        mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.8 0 0 0 0 0.6 0 0 0 0 0.4 0 0 0 0.4 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+        z-index: 1;
+    }
 
-        h1 {
-            font-size: 1.4rem;
-            text-align: center;
-            background: linear-gradient(to right, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 25px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
+    .particles {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+    }
+    .particle {
+        position: absolute;
+        width: 3px;
+        height: 3px;
+        background: var(--gold);
+        border-radius: 50%;
+        opacity: 0;
+        animation: float-up 12s infinite linear;
+        filter: blur(0.5px);
+    }
+    @keyframes float-up {
+        0% { transform: translateY(110vh) translateX(0); opacity: 0; }
+        10% { opacity: 0.6; }
+        90% { opacity: 0.3; }
+        100% { transform: translateY(-10vh) translateX(50px); opacity: 0; }
+    }
 
-        .book-visual {
-            width: 100px;
-            height: 140px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            margin: 0 auto 25px;
-            border-radius: 4px 12px 12px 4px;
-            position: relative;
-            box-shadow: 8px 8px 20px rgba(0,0,0,0.4);
-            transition: all 0.5s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-        }
+    .top-bar {
+        max-width: 460px;
+        margin: 0 auto 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        z-index: 2;
+        animation: slide-down 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-        .book-visual::before {
-            content: '';
-            position: absolute;
-            left: 8px;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 2px;
-        }
+    .logo {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.8rem;
+        font-weight: 600;
+        letter-spacing: 0.4em;
+        color: var(--ink);
+        position: relative;
+    }
+    .logo::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
 
-        .is-reading .book-visual {
-            animation: pulseBook 2s infinite ease-in-out;
-            box-shadow: 0 0 40px rgba(129, 140, 248, 0.6);
-        }
+    .signature {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        font-size: 0.75rem;
+        color: var(--gold);
+        letter-spacing: 0.15em;
+        text-align: right;
+        line-height: 1.2;
+        opacity: 0.9;
+    }
+    .signature span {
+        display: block;
+        font-size: 0.55rem;
+        color: var(--ink-dim);
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        margin-top: 3px;
+        font-style: normal;
+    }
 
-        @keyframes pulseBook {
-            0%, 100% { transform: scale(1) rotate(0deg); }
-            50% { transform: scale(1.08) rotate(3deg); }
-        }
+    @keyframes slide-down {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 
-        .upload-zone {
-            border: 2px dashed rgba(129, 140, 248, 0.4);
-            padding: 25px 20px;
-            border-radius: 20px;
-            text-align: center;
-            background: var(--glass);
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
+    .container {
+        max-width: 460px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 2;
+    }
 
-        .upload-zone:active { 
-            transform: scale(0.96); 
-            background: rgba(129, 140, 248, 0.15);
-            border-color: var(--primary);
-        }
+    .book-stage {
+        perspective: 2000px;
+        perspective-origin: 50% 30%;
+        margin: 0 auto 36px;
+        display: flex;
+        justify-content: center;
+        animation: fade-in 1s 0.2s both;
+        position: relative;
+        padding-bottom: 30px;
+    }
 
-        .upload-zone .icon {
-            font-size: 2rem;
-            margin-bottom: 8px;
-            display: block;
-        }
+    .book {
+        position: relative;
+        width: 240px;
+        height: 320px;
+        transform-style: preserve-3d;
+        transform: rotateY(-18deg) rotateX(8deg);
+        transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-        .upload-zone .label {
-            font-size: 0.9rem;
-            color: var(--text-dim);
-            font-weight: 500;
-        }
+    .book.reading {
+        animation: book-breathe 4s infinite ease-in-out;
+    }
 
-        .upload-zone .filename {
-            font-size: 0.8rem;
-            color: var(--primary);
-            margin-top: 5px;
-            font-weight: 600;
-            word-break: break-all;
-        }
+    @keyframes book-breathe {
+        0%, 100% { transform: rotateY(-18deg) rotateX(8deg) translateY(0); }
+        50% { transform: rotateY(-16deg) rotateX(6deg) translateY(-6px); }
+    }
 
-        .control-panel {
-            background: rgba(15, 23, 42, 0.6);
-            padding: 20px;
-            border-radius: 20px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
+    .book-face {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 4px 8px 8px 4px;
+        backface-visibility: hidden;
+    }
 
-        .setting-row { 
-            margin-bottom: 20px; 
-        }
-        .setting-row:last-child { 
-            margin-bottom: 0; 
-        }
+    .book-cover {
+        background:
+            linear-gradient(135deg, rgba(255,255,255,0.05), transparent 40%),
+            linear-gradient(45deg, #2a1f15, #4a3520 60%, #2a1f15);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 30px 25px;
+        box-shadow:
+            inset 0 0 60px rgba(0,0,0,0.5),
+            inset 8px 0 20px rgba(0,0,0,0.6),
+            0 30px 60px rgba(0,0,0,0.7);
+        transform: translateZ(10px);
+    }
 
-        label { 
-            display: block; 
-            font-size: 0.7rem; 
-            color: var(--text-dim); 
-            margin-bottom: 10px; 
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    .book-cover::before {
+        content: '';
+        position: absolute;
+        inset: 12px;
+        border: 1px solid rgba(212, 165, 116, 0.3);
+        border-radius: 2px;
+    }
 
-        select, input[type="range"] {
-            width: 100%;
-            background: #0f172a;
-            color: white;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            font-size: 1rem;
-            outline: none;
-        }
+    .book-cover::after {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 12px;
+        bottom: 12px;
+        width: 2px;
+        background: linear-gradient(180deg, transparent, var(--gold-dim), transparent);
+        opacity: 0.6;
+    }
 
-        select {
-            padding: 14px 12px;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23818cf8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 15px center;
-            padding-right: 35px;
-        }
+    .cover-ornament {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 3rem;
+        color: var(--gold);
+        margin-bottom: 12px;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+        animation: pulse-gold 3s infinite ease-in-out;
+    }
 
-        input[type="range"] {
-            -webkit-appearance: none;
-            height: 8px;
-            padding: 0;
-            background: #334155;
-            border-radius: 4px;
-        }
+    @keyframes pulse-gold {
+        0%, 100% { opacity: 0.7; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.05); }
+    }
 
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(129, 140, 248, 0.5);
-            border: 2px solid white;
-        }
+    .cover-title {
+        font-family: 'Cormorant Garamond', serif;
+        color: var(--gold);
+        font-size: 1.1rem;
+        letter-spacing: 0.4em;
+        text-transform: uppercase;
+        text-align: center;
+        margin-bottom: 8px;
+    }
+    .cover-sub {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        color: var(--ink-dim);
+        font-size: 0.75rem;
+        letter-spacing: 0.2em;
+    }
 
-        .value-display {
-            color: var(--primary);
-            font-weight: 700;
-            font-size: 0.9rem;
-        }
+    .book-page {
+        background: var(--paper);
+        transform: translateZ(10px);
+        display: none;
+        overflow: hidden;
+        box-shadow:
+            inset 0 0 30px rgba(0,0,0,0.1),
+            inset 6px 0 15px rgba(0,0,0,0.15),
+            0 30px 60px rgba(0,0,0,0.7);
+    }
 
-        .play-btn {
-            width: 100%;
-            padding: 20px;
-            border-radius: 20px;
-            border: none;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 700;
-            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: all 0.2s;
-            letter-spacing: 0.5px;
-            position: relative;
-            overflow: hidden;
-        }
+    .book-page canvas {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+    }
 
-        .play-btn:active { 
-            transform: scale(0.97); 
-            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
-        }
+    .book-spine {
+        position: absolute;
+        top: 4px;
+        bottom: 4px;
+        left: 0;
+        width: 18px;
+        background:
+            linear-gradient(90deg, #1a1410, #3a2818 50%, #1a1410),
+            repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 3px);
+        transform: rotateY(-90deg) translateX(-9px);
+        transform-origin: left center;
+        border-radius: 2px 0 0 2px;
+    }
 
-        .play-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+    .book-pages-edge {
+        position: absolute;
+        top: 6px;
+        bottom: 6px;
+        right: 0;
+        width: 14px;
+        background: repeating-linear-gradient(
+            90deg,
+            #f5efe0 0px,
+            #e8dcc0 1px,
+            #f5efe0 2px
+        );
+        transform: rotateY(90deg) translateX(7px);
+        transform-origin: right center;
+    }
 
-        .secondary-btns { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 12px; 
-        }
+    .turning-page {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--paper);
+        transform-origin: left center;
+        transform-style: preserve-3d;
+        transform: rotateY(0deg) translateZ(11px);
+        transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        display: none;
+        overflow: hidden;
+        border-radius: 4px 8px 8px 4px;
+    }
 
-        .btn-s { 
-            padding: 16px; 
-            border-radius: 16px; 
-            border: none; 
-            background: #334155; 
-            color: white; 
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
+    .turning-page.flipping {
+        transform: rotateY(-180deg) translateZ(11px);
+    }
 
-        .btn-s:active { 
-            transform: scale(0.95); 
-            background: #475569;
-        }
+    .page-badge {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-2);
+        color: var(--gold);
+        padding: 8px 18px;
+        border-radius: 100px;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 0.85rem;
+        letter-spacing: 0.15em;
+        border: 1px solid rgba(212, 165, 116, 0.3);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        display: none;
+        z-index: 10;
+        white-space: nowrap;
+    }
 
-        .btn-s:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
+    .page-badge.visible {
+        display: block;
+        animation: badge-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
 
-        .btn-s.danger {
-            background: rgba(248, 113, 113, 0.15);
-            color: #f87171;
-        }
+    @keyframes badge-pop {
+        from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.8); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    }
 
-        .btn-s.danger:active {
-            background: rgba(248, 113, 113, 0.25);
-        }
+    .nav-arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(22, 19, 16, 0.85);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(212, 165, 116, 0.3);
+        color: var(--gold);
+        font-size: 1.3rem;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+        z-index: 5;
+    }
+    .nav-arrow:active {
+        transform: translateY(-50%) scale(0.85);
+        background: var(--gold);
+        color: var(--bg-0);
+    }
+    .nav-arrow:disabled {
+        opacity: 0.25;
+    }
+    .nav-arrow.prev { left: -8px; }
+    .nav-arrow.next { right: -8px; }
+    .book.loaded .nav-arrow { display: flex; }
 
-        #status { 
-            text-align: center; 
-            font-size: 0.85rem; 
-            margin-top: 20px; 
-            color: var(--accent); 
-            font-weight: 600;
-            min-height: 24px;
-            line-height: 1.4;
-        }
+    .audio-wave {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 4px;
+        height: 30px;
+        margin: 18px auto 0;
+        opacity: 0;
+        transition: opacity 0.4s;
+    }
+    .audio-wave.active { opacity: 1; }
+    .audio-wave .bar {
+        width: 3px;
+        background: linear-gradient(180deg, var(--gold), var(--gold-dim));
+        border-radius: 4px;
+        animation: wave 1.1s infinite ease-in-out;
+    }
+    .audio-wave .bar:nth-child(1) { animation-delay: 0s; height: 40%; }
+    .audio-wave .bar:nth-child(2) { animation-delay: 0.1s; height: 70%; }
+    .audio-wave .bar:nth-child(3) { animation-delay: 0.2s; height: 100%; }
+    .audio-wave .bar:nth-child(4) { animation-delay: 0.3s; height: 80%; }
+    .audio-wave .bar:nth-child(5) { animation-delay: 0.4s; height: 60%; }
+    .audio-wave .bar:nth-child(6) { animation-delay: 0.5s; height: 90%; }
+    .audio-wave .bar:nth-child(7) { animation-delay: 0.6s; height: 50%; }
+    .audio-wave .bar:nth-child(8) { animation-delay: 0.7s; height: 75%; }
+    .audio-wave .bar:nth-child(9) { animation-delay: 0.8s; height: 45%; }
 
-        .progress-info {
-            text-align: center;
-            font-size: 0.75rem;
-            color: var(--text-dim);
-            margin-top: 8px;
-            font-weight: 500;
-        }
+    @keyframes wave {
+        0%, 100% { transform: scaleY(0.4); opacity: 0.5; }
+        50% { transform: scaleY(1); opacity: 1; }
+    }
 
-        .ios-hint {
-            background: rgba(45, 212, 191, 0.1);
-            border: 1px solid rgba(45, 212, 191, 0.2);
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 20px;
-            font-size: 0.75rem;
-            color: var(--accent);
-            text-align: center;
-            line-height: 1.5;
-        }
+    .progress-section {
+        margin-top: 20px;
+        text-align: center;
+        animation: fade-in 1s 0.4s both;
+    }
+    .progress-status {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        color: var(--ink);
+        font-size: 1rem;
+        letter-spacing: 0.1em;
+        margin-bottom: 6px;
+        min-height: 24px;
+    }
+    .progress-detail {
+        font-family: 'Inter', sans-serif;
+        font-size: 0.68rem;
+        color: var(--ink-dim);
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+    }
 
-        .ios-hint strong {
-            display: block;
-            margin-bottom: 4px;
-            font-size: 0.8rem;
-        }
+    .upload-zone {
+        display: block;
+        margin: 28px 0 24px;
+        padding: 22px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, rgba(212, 165, 116, 0.08), rgba(212, 165, 116, 0.02));
+        border: 1px solid rgba(212, 165, 116, 0.15);
+        text-align: center;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s;
+        animation: fade-in 1s 0.5s both;
+    }
+    .upload-zone::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(212, 165, 116, 0.15), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.6s;
+    }
+    .upload-zone:active {
+        transform: scale(0.98);
+        border-color: var(--gold);
+    }
+    .upload-zone:active::before {
+        transform: translateX(100%);
+    }
 
-        /* Animation de chargement */
-        .loading-dots::after {
-            content: '';
-            animation: dots 1.5s steps(4, end) infinite;
-        }
+    .upload-icon {
+        font-size: 1.6rem;
+        margin-bottom: 6px;
+        display: block;
+        color: var(--gold);
+    }
+    .upload-label {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        color: var(--ink);
+        font-size: 1.05rem;
+        letter-spacing: 0.05em;
+    }
+    .upload-filename {
+        display: block;
+        margin-top: 8px;
+        color: var(--gold);
+        font-family: 'Inter', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 600;
+        word-break: break-all;
+    }
 
-        @keyframes dots {
-            0% { content: ''; }
-            25% { content: '.'; }
-            50% { content: '..'; }
-            75% { content: '...'; }
-        }
+    .panel {
+        background: linear-gradient(180deg, var(--bg-1), var(--bg-2));
+        padding: 24px 22px;
+        border-radius: 24px;
+        margin-bottom: 24px;
+        border: 1px solid rgba(212, 165, 116, 0.08);
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        animation: fade-in 1s 0.6s both;
+    }
 
-        /* Masquer la barre de défilement mais garder la fonctionnalité */
-        body::-webkit-scrollbar {
-            display: none;
-        }
-        body {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-    </style>
+    .panel-title {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 0.7rem;
+        color: var(--gold);
+        letter-spacing: 0.4em;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        text-align: center;
+        position: relative;
+    }
+    .panel-title::before,
+    .panel-title::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        width: 30px;
+        height: 1px;
+        background: rgba(212, 165, 116, 0.3);
+    }
+    .panel-title::before { left: 0; }
+    .panel-title::after { right: 0; }
+
+    .row { margin-bottom: 18px; }
+    .row:last-child { margin-bottom: 0; }
+
+    label.field-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.68rem;
+        color: var(--ink-dim);
+        margin-bottom: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+    }
+    .value {
+        color: var(--gold);
+        font-weight: 600;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.05rem;
+        font-style: italic;
+        letter-spacing: 0.05em;
+    }
+
+    select, input[type="range"] {
+        width: 100%;
+        background: rgba(10, 9, 8, 0.6);
+        color: var(--ink);
+        border: 1px solid rgba(212, 165, 116, 0.15);
+        border-radius: 12px;
+        outline: none;
+    }
+    select {
+        padding: 14px 14px;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.92rem;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23d4a574' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 16px center;
+        padding-right: 38px;
+    }
+
+    input[type="range"] {
+        -webkit-appearance: none;
+        height: 6px;
+        padding: 0;
+        background: linear-gradient(90deg, var(--gold-dim) var(--p, 50%), rgba(212, 165, 116, 0.12) var(--p, 50%));
+        border: none;
+        border-radius: 3px;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #f0d29a, var(--gold) 60%, var(--gold-dim));
+        cursor: pointer;
+        box-shadow: 0 2px 12px rgba(212, 165, 116, 0.6), 0 0 0 4px rgba(212, 165, 116, 0.15);
+        border: none;
+    }
+    input[type="range"]::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #f0d29a, var(--gold) 60%, var(--gold-dim));
+        cursor: pointer;
+        border: none;
+        box-shadow: 0 2px 12px rgba(212, 165, 116, 0.6);
+    }
+
+    .voice-row {
+        display: flex;
+        gap: 10px;
+    }
+    .voice-row select { flex: 1; }
+    .test-btn {
+        width: 52px;
+        background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+        border: none;
+        border-radius: 12px;
+        color: var(--bg-0);
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+    .test-btn:active { transform: scale(0.9); }
+    .test-btn.playing {
+        background: linear-gradient(135deg, var(--ink), var(--gold));
+        animation: pulse-soft 1s infinite;
+    }
+    @keyframes pulse-soft {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(212, 165, 116, 0.5); }
+        50% { box-shadow: 0 0 0 8px rgba(212, 165, 116, 0); }
+    }
+
+    .play-btn {
+        width: 100%;
+        padding: 22px;
+        border-radius: 100px;
+        border: none;
+        background: linear-gradient(135deg, var(--gold), #b08a5a);
+        color: var(--bg-0);
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.2rem;
+        font-weight: 600;
+        letter-spacing: 0.4em;
+        text-transform: uppercase;
+        cursor: pointer;
+        box-shadow:
+            0 15px 40px rgba(212, 165, 116, 0.4),
+            inset 0 1px 1px rgba(255, 255, 255, 0.3);
+        margin-bottom: 14px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s;
+        animation: fade-in 1s 0.7s both;
+    }
+    .play-btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        transform: translateX(-100%);
+    }
+    .play-btn:not(:disabled):active {
+        transform: scale(0.97);
+        box-shadow: 0 5px 20px rgba(212, 165, 116, 0.3);
+    }
+    .play-btn:not(:disabled):active::before {
+        animation: shine 0.6s;
+    }
+    @keyframes shine {
+        to { transform: translateX(100%); }
+    }
+    .play-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        filter: grayscale(0.5);
+    }
+
+    .secondary-btns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        animation: fade-in 1s 0.8s both;
+    }
+    .btn-s {
+        padding: 16px;
+        border-radius: 14px;
+        border: 1px solid rgba(212, 165, 116, 0.15);
+        background: rgba(22, 19, 16, 0.6);
+        color: var(--ink);
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 0.82rem;
+        letter-spacing: 0.15em;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+    }
+    .btn-s:active {
+        transform: scale(0.95);
+        background: rgba(212, 165, 116, 0.15);
+    }
+    .btn-s:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+    .btn-s.danger {
+        border-color: rgba(201, 87, 87, 0.3);
+        color: var(--danger);
+    }
+
+    .ios-hint {
+        background: linear-gradient(135deg, rgba(212, 165, 116, 0.08), transparent);
+        border: 1px solid rgba(212, 165, 116, 0.2);
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin: 0 0 20px;
+        font-size: 0.78rem;
+        color: var(--ink-dim);
+        line-height: 1.6;
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        display: none;
+    }
+    .ios-hint strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--gold);
+        font-style: normal;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+    }
+    .ios-hint b {
+        color: var(--gold);
+        font-weight: 600;
+        font-style: normal;
+    }
+
+    .footer {
+        text-align: center;
+        margin-top: 36px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(212, 165, 116, 0.1);
+        animation: fade-in 1s 1s both;
+    }
+    .footer-main {
+        font-family: 'Cormorant Garamond', serif;
+        font-style: italic;
+        color: var(--gold);
+        font-size: 1.05rem;
+        letter-spacing: 0.2em;
+        margin-bottom: 4px;
+    }
+    .footer-sub {
+        font-family: 'Inter', sans-serif;
+        color: var(--ink-dim);
+        font-size: 0.58rem;
+        letter-spacing: 0.45em;
+        text-transform: uppercase;
+    }
+
+    @keyframes fade-in {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .loading-dots::after {
+        content: '';
+        animation: dots 1.4s steps(4, end) infinite;
+    }
+    @keyframes dots {
+        0% { content: ''; }
+        25% { content: '·'; }
+        50% { content: '··'; }
+        75% { content: '···'; }
+    }
+
+    body::-webkit-scrollbar { display: none; }
+</style>
+```
+
 </head>
 <body>
 
-<div class="app-card" id="app">
-    <h1>📚 LECTURE AUDIO</h1>
-    
-    <div class="book-visual" id="bookIcon">📖</div>
+<div class="particles" id="particles"></div>
 
-    <div class="ios-hint" id="iosHint" style="display:none;">
-        <strong>💡 Astuce iPhone</strong>
-        Pour de meilleures voix : Réglages → Accessibilité → Contenu prononcé → Voix → Télécharger "Thomas (Premium)"
+<div class="top-bar">
+    <div class="logo">AURA</div>
+    <div class="signature">
+        <em>Created by Harden</em>
+        <span>Édition Premium</span>
     </div>
+</div>
 
-    <div class="upload-zone" id="uploadZone">
-        <span class="icon">📄</span>
-        <span class="label" id="fileLabel">Appuyez pour charger un PDF</span>
-        <span class="filename" id="fileName"></span>
-        <input type="file" id="fileInput" accept="application/pdf" style="display:none">
-    </div>
+<div class="container" id="app">
 
-    <div class="control-panel">
-        <div class="setting-row">
-            <label>Page de départ : <span class="value-display" id="pageVal">1</span></label>
-            <input type="range" id="pageRange" min="1" max="1" value="1" disabled>
+```
+<div class="book-stage">
+    <div class="book" id="book">
+        <button class="nav-arrow prev" id="prevPage" disabled>‹</button>
+
+        <div class="book-face book-cover" id="bookCover">
+            <div class="cover-ornament">❦</div>
+            <div class="cover-title">Aura</div>
+            <div class="cover-sub">Lecture Audio</div>
         </div>
 
-        <div class="setting-row">
-            <label>Qualité de la voix</label>
+        <div class="book-face book-page" id="bookPage">
+            <canvas id="pdfCanvas"></canvas>
+        </div>
+
+        <div class="turning-page" id="turningPage">
+            <canvas id="turningCanvas"></canvas>
+        </div>
+
+        <div class="book-spine"></div>
+        <div class="book-pages-edge"></div>
+
+        <button class="nav-arrow next" id="nextPage" disabled>›</button>
+    </div>
+    <div class="page-badge" id="pageBadge">Page 1 · 1</div>
+</div>
+
+<div class="audio-wave" id="audioWave">
+    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+    <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+</div>
+
+<div class="progress-section">
+    <div class="progress-status" id="status">Choisissez un ouvrage pour commencer</div>
+    <div class="progress-detail" id="progressInfo"></div>
+</div>
+
+<div class="ios-hint" id="iosHint">
+    <strong>Astuce iPhone</strong>
+    Réglages → Accessibilité → Contenu prononcé → Voix → Français → téléchargez <b>Thomas (Premium)</b> ou <b>Audrey (Premium)</b>
+</div>
+
+<label class="upload-zone" for="fileInput">
+    <span class="upload-icon">❦</span>
+    <span class="upload-label" id="fileLabel">Importer un ouvrage</span>
+    <span class="upload-filename" id="fileName"></span>
+    <input type="file" id="fileInput" accept="application/pdf,.pdf" style="position:absolute;left:-9999px;opacity:0;">
+</label>
+
+<div class="panel">
+    <div class="panel-title">Réglages</div>
+
+    <div class="row">
+        <label class="field-label">Page de départ <span class="value" id="pageVal">1</span></label>
+        <input type="range" id="pageRange" min="1" max="1" value="1" disabled>
+    </div>
+
+    <div class="row">
+        <label class="field-label">Voix</label>
+        <div class="voice-row">
             <select id="voiceSelect"></select>
-        </div>
-
-        <div class="setting-row">
-            <label>Vitesse : <span class="value-display" id="speedVal">1.0x</span></label>
-            <input type="range" id="speedRange" min="0.5" max="2.0" value="1.0" step="0.1">
+            <button class="test-btn" id="testVoiceBtn">▶</button>
         </div>
     </div>
 
-    <button class="play-btn" id="playBtn" disabled>▶ COMMENCER</button>
-    
-    <div class="secondary-btns">
-        <button class="btn-s" id="pauseBtn" disabled>⏸ Pause</button>
-        <button class="btn-s danger" id="stopBtn" disabled>⏹ Arrêt</button>
+    <div class="row">
+        <label class="field-label">Vitesse <span class="value" id="speedVal">0.95×</span></label>
+        <input type="range" id="speedRange" min="0.5" max="2.0" value="0.95" step="0.05">
     </div>
 
-    <div id="status">Chargez un PDF pour commencer</div>
-    <div class="progress-info" id="progressInfo"></div>
+    <div class="row">
+        <label class="field-label">Ton <span class="value" id="pitchVal">1.00</span></label>
+        <input type="range" id="pitchRange" min="0.7" max="1.3" value="1.0" step="0.05">
+    </div>
+</div>
+
+<button class="play-btn" id="playBtn" disabled>Commencer</button>
+
+<div class="secondary-btns">
+    <button class="btn-s" id="pauseBtn" disabled>Pause</button>
+    <button class="btn-s danger" id="stopBtn" disabled>Arrêt</button>
+</div>
+
+<div class="footer">
+    <div class="footer-main">Aura</div>
+    <div class="footer-sub">Created by Harden</div>
+</div>
+```
+
 </div>
 
 <script>
-    // Configuration PDF.js
     const pdfjsLib = window['pdfjs-dist/build/pdf'];
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-    
-    // Variables globales
+
+    // === Particules d'ambiance === //
+    const particlesEl = document.getElementById('particles');
+    for (let i = 0; i < 14; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDelay = Math.random() * 12 + 's';
+        p.style.animationDuration = (8 + Math.random() * 8) + 's';
+        p.style.opacity = (0.2 + Math.random() * 0.4);
+        particlesEl.appendChild(p);
+    }
+
+    // === État === //
+    let pdfDoc = null;
     let pagesContent = [];
+    let pageStartIndices = [];
     let currentPageIndex = 0;
+    let displayedPageNum = 1;
     let currentSentenceIndex = 0;
     let sentences = [];
     let isPlaying = false;
     let isPaused = false;
-    
+    let isRendering = false;
+
     const synth = window.speechSynthesis;
-    const app = document.getElementById('app');
+    const book = document.getElementById('book');
+    const bookCover = document.getElementById('bookCover');
+    const bookPage = document.getElementById('bookPage');
+    const turningPage = document.getElementById('turningPage');
     const playBtn = document.getElementById('playBtn');
     const pauseBtn = document.getElementById('pauseBtn');
     const stopBtn = document.getElementById('stopBtn');
     const status = document.getElementById('status');
     const progressInfo = document.getElementById('progressInfo');
     const fileInput = document.getElementById('fileInput');
-    const uploadZone = document.getElementById('uploadZone');
     const pageRange = document.getElementById('pageRange');
+    const pdfCanvas = document.getElementById('pdfCanvas');
+    const turningCanvas = document.getElementById('turningCanvas');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const pageBadge = document.getElementById('pageBadge');
+    const audioWave = document.getElementById('audioWave');
 
-    // Détection iOS
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    if (isIOS) {
-        document.getElementById('iosHint').style.display = 'block';
+    if (isIOS) document.getElementById('iosHint').style.display = 'block';
+
+    // === Remplissage visuel des sliders === //
+    function updateSliderFill(input) {
+        const min = parseFloat(input.min);
+        const max = parseFloat(input.max);
+        const val = parseFloat(input.value);
+        const pct = ((val - min) / (max - min)) * 100;
+        input.style.setProperty('--p', pct + '%');
+    }
+    document.querySelectorAll('input[type="range"]').forEach(r => {
+        updateSliderFill(r);
+        r.addEventListener('input', () => updateSliderFill(r));
+    });
+
+    // === Voix === //
+    const LOW_QUALITY_BLOCKLIST = ['Eddy', 'Flo', 'Grandma', 'Grandpa', 'Reed', 'Sandy', 'Shelley', 'Rocko', 'Bahh', 'Bells', 'Boing', 'Bubbles', 'Cellos', 'Jester', 'Organ', 'Superstar', 'Trinoids', 'Whisper', 'Wobble', 'Zarvox', 'Albert', 'Bad News', 'Good News', 'Junior', 'Kathy', 'Ralph', 'Fred'];
+
+    function getVoiceQuality(voice) {
+        const name = voice.name;
+        if (name.includes('Siri')) return 100;
+        if (name.includes('Premium')) return 90;
+        if (name.includes('Enhanced') || name.includes('Améliorée')) return 80;
+        if (name.includes('Neural')) return 70;
+        if (name.includes('Google')) return 60;
+        if (name.includes('Microsoft')) return 50;
+        return 10;
     }
 
-    // Initialisation des voix avec retry pour iOS
     function initVoices() {
         const voices = synth.getVoices();
         if (voices.length === 0) return;
-        
         const select = document.getElementById('voiceSelect');
-        const frVoices = voices.filter(v => v.lang.startsWith('fr'));
-        const voicesToUse = frVoices.length > 0 ? frVoices : voices;
-        
-        // Trier : premium/enhanced d'abord
-        voicesToUse.sort((a, b) => {
-            const aPremium = a.name.includes('Premium') || a.name.includes('Enhanced') || a.name.includes('Améliorée');
-            const bPremium = b.name.includes('Premium') || b.name.includes('Enhanced') || b.name.includes('Améliorée');
-            return bPremium - aPremium;
-        });
-        
-        select.innerHTML = voicesToUse.map(v => {
-            let label = v.name;
-            if (label.includes('Microsoft')) label = label.replace('Microsoft', 'HD');
-            const isPremium = v.name.includes('Premium') || v.name.includes('Enhanced');
-            return `<option value="${v.name}">${label}${isPremium ? ' ⭐' : ''}</option>`;
-        }).join('');
-    }
+        let frVoices = voices.filter(v => v.lang.startsWith('fr'));
+        if (frVoices.length === 0) frVoices = voices;
+        frVoices = frVoices.filter(v => !LOW_QUALITY_BLOCKLIST.some(b => v.name.includes(b)));
+        frVoices.sort((a, b) => getVoiceQuality(b) - getVoiceQuality(a));
 
-    // iOS charge les voix de manière asynchrone
-    if (synth.onvoiceschanged !== undefined) {
-        synth.onvoiceschanged = initVoices;
+        select.innerHTML = frVoices.map(v => {
+            const q = getVoiceQuality(v);
+            let label = v.name.replace('Microsoft', '').replace('Google', '').trim();
+            let badge = '';
+            if (q >= 90) badge = ' · Premium ★';
+            else if (q >= 70) badge = ' · HD';
+            else if (q >= 50) badge = ' · Standard';
+            return `<option value="${v.name}">${label}${badge}</option>`;
+        }).join('');
+
+        const saved = localStorage.getItem('preferredVoice');
+        if (saved && frVoices.some(v => v.name === saved)) select.value = saved;
+        select.onchange = () => localStorage.setItem('preferredVoice', select.value);
     }
-    // Retry pour iOS
+    if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = initVoices;
     setTimeout(initVoices, 100);
     setTimeout(initVoices, 500);
     setTimeout(initVoices, 1000);
 
-    // Gestion du upload zone (touch friendly)
-    uploadZone.addEventListener('click', () => fileInput.click());
-    uploadZone.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        fileInput.click();
-    });
-
-    // Vitesse
+    // === Affichage valeurs sliders === //
     document.getElementById('speedRange').oninput = (e) => {
-        document.getElementById('speedVal').innerText = e.target.value + 'x';
+        document.getElementById('speedVal').innerText = parseFloat(e.target.value).toFixed(2) + '×';
     };
-
-    // Page de départ
+    document.getElementById('pitchRange').oninput = (e) => {
+        document.getElementById('pitchVal').innerText = parseFloat(e.target.value).toFixed(2);
+    };
     pageRange.oninput = (e) => {
         document.getElementById('pageVal').innerText = e.target.value;
+        renderPage(parseInt(e.target.value));
     };
 
-    // Traitement PDF
-    fileInput.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        document.getElementById('fileName').innerText = file.name;
-        document.getElementById('fileLabel').innerText = 'PDF chargé';
-        status.innerHTML = '<span class="loading-dots">Analyse en cours</span>';
-        
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-            
-            pagesContent = [];
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const content = await page.getTextContent();
-                const text = content.items.map(s => s.str).join(' ').replace(/\s+/g, ' ').trim();
-                pagesContent.push(text);
-                status.innerText = `Chargement : ${Math.round((i/pdf.numPages)*100)}%`;
-            }
-            
-            pageRange.max = pdf.numPages;
-            pageRange.min = 1;
-            pageRange.value = 1;
-            pageRange.disabled = false;
-            document.getElementById('pageVal').innerText = '1';
-            
-            playBtn.disabled = false;
-            status.innerText = `✓ ${pdf.numPages} pages prêtes`;
-            progressInfo.innerText = 'Appuyez sur ▶ pour commencer';
-            
-        } catch (err) {
-            status.innerText = '❌ Erreur : ' + err.message;
-            console.error(err);
-        }
-    };
-
-    // Découper le texte en phrases (meilleure gestion que par mots)
-    function splitIntoSentences(text) {
-        // Gestion des abréviations courantes en français
-        const abbreviations = ['M.', 'Mme', 'Dr', 'Prof', 'etc', 'p.', 'pp.', 'vol', 'chap'];
-        let protected = text;
-        
-        abbreviations.forEach((abbr, i) => {
-            protected = protected.replace(new RegExp(abbr + '\\.', 'g'), abbr + '##POINT' + i + '##');
-        });
-        
-        // Split par points, points d'interrogation, exclamation
-        const parts = protected.split(/(?<=[.!?])\s+/);
-        
-        // Restaurer les points dans les abréviations
-        return parts.map(s => {
-            let restored = s;
-            abbreviations.forEach((abbr, i) => {
-                restored = restored.replace(new RegExp(abbr + '##POINT' + i + '##', 'g'), abbr + '.');
-            });
-            return restored.trim();
-        }).filter(s => s.length > 0);
-    }
-
-    // Préparer la lecture à partir d'une page
-    function prepareSentences(startPageIndex) {
-        const allText = pagesContent.slice(startPageIndex).join(' ');
-        sentences = splitIntoSentences(allText);
-        currentPageIndex = startPageIndex;
-        currentSentenceIndex = 0;
-    }
-
-    // Obtenir la page actuelle basée sur la position dans les phrases
-    function getCurrentPage() {
-        if (sentences all 0.2s;
-            letter-spacing: 0.5px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .play-btn:active { 
-            transform: scale(0.97); 
-            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
-        }
-
-        .play-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .secondary-btns { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 12px; 
-        }
-
-        .btn-s { 
-            padding: 16px; 
-            border-radius: 16px; 
-            border: none; 
-            background: #334155; 
-            color: white; 
-            font-weight: 600;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .btn-s:active { 
-            transform: scale(0.95); 
-            background: #475569;
-        }
-
-        .btn-s:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .btn-s.danger {
-            background: rgba(248, 113, 113, 0.15);
-            color: #f87171;
-        }
-
-        .btn-s.danger:active {
-            background: rgba(248, 113, 113, 0.25);
-        }
-
-        #status { 
-            text-align: center; 
-            font-size: 0.85rem; 
-            margin-top: 20px; 
-            color: var(--accent); 
-            font-weight: 600;
-            min-height: 24px;
-            line-height: 1.4;
-        }
-
-        .progress-info {
-            text-align: center;
-            font-size: 0.75rem;
-            color: var(--text-dim);
-            margin-top: 8px;
-            font-weight: 500;
-        }
-
-        .ios-hint {
-            background: rgba(45, 212, 191, 0.1);
-            border: 1px solid rgba(45, 212, 191, 0.2);
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 20px;
-            font-size: 0.75rem;
-            color: var(--accent);
-            text-align: center;
-            line-height: 1.5;
-        }
-
-        .ios-hint strong {
-            display: block;
-            margin-bottom: 4px;
-            font-size: 0.8rem;
-        }
-
-        /* Animation de chargement */
-        .loading-dots::after {
-            content: '';
-            animation: dots 1.5s steps(4, end) infinite;
-        }
-
-        @keyframes dots {
-            0% { content: ''; }
-            25% { content: '.'; }
-            50% { content: '..'; }
-            75% { content: '...'; }
-        }
-
-        /* Masquer la barre de défilement mais garder la fonctionnalité */
-        body::-webkit-scrollbar {
-            display: none;
-        }
-        body {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-    </style>
-</head>
-<body>
-
-<div class="app-card" id="app">
-    <h1>📚 LECTURE AUDIO</h1>
-    
-    <div class="book-visual" id="bookIcon">📖</div>
-
-    <div class="ios-hint" id="iosHint" style="display:none;">
-        <strong>💡 Astuce iPhone</strong>
-        Pour de meilleures voix : Réglages → Accessibilité → Contenu prononcé → Voix → Télécharger "Thomas (Premium)"
-    </div>
-
-    <div class="upload-zone" id="uploadZone">
-        <span class="icon">📄</span>
-        <span class="label" id="fileLabel">Appuyez pour charger un PDF</span>
-        <span class="filename" id="fileName"></span>
-        <input type="file" id="fileInput" accept="application/pdf" style="display:none">
-    </div>
-
-    <div class="control-panel">
-        <div class="setting-row">
-            <label>Page de départ : <span class="value-display" id="pageVal">1</span></label>
-            <input type="range" id="pageRange" min="1" max="1" value="1" disabled>
-        </div>
-
-        <div class="setting-row">
-            <label>Qualité de la voix</label>
-            <select id="voiceSelect"></select>
-        </div>
-
-        <div class="setting-row">
-            <label>Vitesse : <span class="value-display" id="speedVal">1.0x</span></label>
-            <input type="range" id="speedRange" min="0.5" max="2.0" value="1.0" step="0.1">
-        </div>
-    </div>
-
-    <button class="play-btn" id="playBtn" disabled>▶ COMMENCER</button>
-    
-    <div class="secondary-btns">
-        <button class="btn-s" id="pauseBtn" disabled>⏸ Pause</button>
-        <button class="btn-s danger" id="stopBtn" disabled>⏹ Arrêt</button>
-    </div>
-
-    <div id="status">Chargez un PDF pour commencer</div>
-    <div class="progress-info" id="progressInfo"></div>
-</div>
-
-<script>
-    // Configuration PDF.js
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-    
-    // Variables globales
-    let pagesContent = [];
-    let currentPageIndex = 0;
-    let currentSentenceIndex = 0;
-    let sentences = [];
-    let isPlaying = false;
-    let isPaused = false;
-    
-    const synth = window.speechSynthesis;
-    const app = document.getElementById('app');
-    const playBtn = document.getElementById('playBtn');
-    const pauseBtn = document.getElementById('pauseBtn');
-    const stopBtn = document.getElementById('stopBtn');
-    const status = document.getElementById('status');
-    const progressInfo = document.getElementById('progressInfo');
-    const fileInput = document.getElementById('fileInput');
-    const uploadZone = document.getElementById('uploadZone');
-    const pageRange = document.getElementById('pageRange');
-
-    // Détection iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    if (isIOS) {
-        document.getElementById('iosHint').style.display = 'block';
-    }
-
-    // Initialisation des voix avec retry pour iOS
-    function initVoices() {
+    // === Test voix === //
+    const testBtn = document.getElementById('testVoiceBtn');
+    testBtn.onclick = () => {
+        synth.cancel();
+        const utter = new SpeechSynthesisUtterance("Bonjour. Voici un aperçu de ma voix pour la lecture de votre ouvrage.");
         const voices = synth.getVoices();
-        if (voices.length === 0) return;
-        
-        const select = document.getElementById('voiceSelect');
-        const frVoices = voices.filter(v => v.lang.startsWith('fr'));
-        const voicesToUse = frVoices.length > 0 ? frVoices : voices;
-        
-        // Trier : premium/enhanced d'abord
-        voicesToUse.sort((a, b) => {
-            const aPremium = a.name.includes('Premium') || a.name.includes('Enhanced') || a.name.includes('Améliorée');
-            const bPremium = b.name.includes('Premium') || b.name.includes('Enhanced') || b.name.includes('Améliorée');
-            return bPremium - aPremium;
-        });
-        
-        select.innerHTML = voicesToUse.map(v => {
-            let label = v.name;
-            if (label.includes('Microsoft')) label = label.replace('Microsoft', 'HD');
-            const isPremium = v.name.includes('Premium') || v.name.includes('Enhanced');
-            return `<option value="${v.name}">${label}${isPremium ? ' ⭐' : ''}</option>`;
-        }).join('');
-    }
-
-    // iOS charge les voix de manière asynchrone
-    if (synth.onvoiceschanged !== undefined) {
-        synth.onvoiceschanged = initVoices;
-    }
-    // Retry pour iOS
-    setTimeout(initVoices, 100);
-    setTimeout(initVoices, 500);
-    setTimeout(initVoices, 1000);
-
-    // Gestion du upload zone (touch friendly)
-    uploadZone.addEventListener('click', () => fileInput.click());
-    uploadZone.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        fileInput.click();
-    });
-
-    // Vitesse
-    document.getElementById('speedRange').oninput = (e) => {
-        document.getElementById('speedVal').innerText = e.target.value + 'x';
+        const sel = document.getElementById('voiceSelect').value;
+        utter.voice = voices.find(v => v.name === sel) || voices[0];
+        utter.rate = parseFloat(document.getElementById('speedRange').value);
+        utter.pitch = parseFloat(document.getElementById('pitchRange').value);
+        utter.lang = 'fr-FR';
+        testBtn.classList.add('playing');
+        testBtn.innerText = '||';
+        utter.onend = () => { testBtn.classList.remove('playing'); testBtn.innerText = '▶'; };
+        utter.onerror = () => { testBtn.classList.remove('playing'); testBtn.innerText = '▶'; };
+        synth.speak(utter);
     };
 
-    // Page de départ
-    pageRange.oninput = (e) => {
-        document.getElementById('pageVal').innerText = e.target.value;
+    // === Rendu PDF === //
+    async function renderToCanvas(pageNum, canvas) {
+        const page = await pdfDoc.getPage(pageNum);
+        const containerWidth = book.clientWidth;
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = (containerWidth * 2.5) / viewport.width;
+        const sv = page.getViewport({ scale });
+        canvas.width = sv.width;
+        canvas.height = sv.height;
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: sv }).promise;
+    }
+
+    async function renderPage(pageNum, withFlip = false) {
+        if (!pdfDoc || isRendering) return;
+        if (pageNum < 1 || pageNum > pdfDoc.numPages) return;
+        isRendering = true;
+
+        try {
+            if (withFlip && displayedPageNum !== pageNum) {
+                const tCtx = turningCanvas.getContext('2d');
+                turningCanvas.width = pdfCanvas.width;
+                turningCanvas.height = pdfCanvas.height;
+                tCtx.drawImage(pdfCanvas, 0, 0);
+                turningPage.style.display = 'block';
+                turningPage.classList.remove('flipping');
+
+                await renderToCanvas(pageNum, pdfCanvas);
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        turningPage.classList.add('flipping');
+                    });
+                });
+                setTimeout(() => {
+                    turningPage.style.display = 'none';
+                    turningPage.classList.remove('flipping');
+                }, 800);
+            } else {
+                await renderToCanvas(pageNum, pdfCanvas);
+            }
+
+            displayedPageNum = pageNum;
+            pageBadge.innerText = `Page ${pageNum} · ${pdfDoc.numPages}`;
+            prevPageBtn.disabled = (pageNum <= 1);
+            nextPageBtn.disabled = (pageNum >= pdfDoc.numPages);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            isRendering = false;
+        }
+    }
+
+    prevPageBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (displayedPageNum > 1) renderPage(displayedPageNum - 1, true);
+    };
+    nextPageBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (displayedPageNum < pdfDoc.numPages) renderPage(displayedPageNum + 1, true);
     };
 
-    // Traitement PDF
-    fileInput.onchange = async (e) => {
+    // === Nettoyage texte === //
+    function cleanPdfText(text) {
+        let t = text;
+        t = t.replace(/(\w)-\s+(\w)/g, '$1$2');
+        t = t.replace(/\s+\d{1,4}\s+/g, ' ');
+        t = t.replace(/ﬁ/g, 'fi').replace(/ﬂ/g, 'fl').replace(/ﬀ/g, 'ff').replace(/ﬃ/g, 'ffi').replace(/ﬄ/g, 'ffl');
+        t = t.replace(/[""„"]/g, '"').replace(/['']/g, "'");
+        t = t.replace(/[\u00A0\u2000-\u200B\u202F\u205F]/g, ' ');
+        t = t.replace(/\.{3,}/g, '…');
+        t = t.replace(/\s+/g, ' ').trim();
+        return t;
+    }
+
+    // === Chargement PDF === //
+    fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        
+
         document.getElementById('fileName').innerText = file.name;
-        document.getElementById('fileLabel').innerText = 'PDF chargé';
+        document.getElementById('fileLabel').innerText = 'Ouvrage importé';
         status.innerHTML = '<span class="loading-dots">Analyse en cours</span>';
-        
+
         try {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-            
+            const buf = await file.arrayBuffer();
+            pdfDoc = await pdfjsLib.getDocument({data: buf}).promise;
+
             pagesContent = [];
-            for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
+            for (let i = 1; i <= pdfDoc.numPages; i++) {
+                const page = await pdfDoc.getPage(i);
                 const content = await page.getTextContent();
-                const text = content.items.map(s => s.str).join(' ').replace(/\s+/g, ' ').trim();
-                pagesContent.push(text);
-                status.innerText = `Chargement : ${Math.round((i/pdf.numPages)*100)}%`;
+                const text = content.items.map(s => s.str).join(' ');
+                pagesContent.push(cleanPdfText(text));
+                status.innerHTML = `<span class="loading-dots">Lecture ${Math.round((i/pdfDoc.numPages)*100)}%</span>`;
             }
-            
-            pageRange.max = pdf.numPages;
+
+            pageRange.max = pdfDoc.numPages;
             pageRange.min = 1;
             pageRange.value = 1;
             pageRange.disabled = false;
+            updateSliderFill(pageRange);
             document.getElementById('pageVal').innerText = '1';
-            
+
+            bookCover.style.transition = 'opacity 0.6s';
+            bookCover.style.opacity = '0';
+            setTimeout(() => {
+                bookCover.style.display = 'none';
+                bookPage.style.display = 'block';
+                bookPage.style.opacity = '0';
+                bookPage.style.transition = 'opacity 0.6s';
+                requestAnimationFrame(() => bookPage.style.opacity = '1');
+            }, 600);
+
+            book.classList.add('loaded');
+            await renderPage(1);
+            pageBadge.classList.add('visible');
+
             playBtn.disabled = false;
-            status.innerText = `✓ ${pdf.numPages} pages prêtes`;
-            progressInfo.innerText = 'Appuyez sur ▶ pour commencer';
-            
+            status.innerText = `✦ ${pdfDoc.numPages} pages prêtes`;
+            progressInfo.innerText = 'Touchez COMMENCER';
         } catch (err) {
-            status.innerText = '❌ Erreur : ' + err.message;
+            status.innerText = '✕ Erreur : ' + err.message;
             console.error(err);
         }
-    };
+    });
 
-    // Découper le texte en phrases (meilleure gestion que par mots)
     function splitIntoSentences(text) {
-        // Gestion des abréviations courantes en français
-        const abbreviations = ['M.', 'Mme', 'Dr', 'Prof', 'etc', 'p.', 'pp.', 'vol', 'chap'];
-        let protected = text;
-        
-        abbreviations.forEach((abbr, i) => {
-            protected = protected.replace(new RegExp(abbr + '\\.', 'g'), abbr + '##POINT' + i + '##');
+        const abbr = ['M.', 'Mme', 'Dr', 'Prof', 'etc', 'p.', 'pp.', 'vol', 'chap'];
+        let prot = text;
+        abbr.forEach((a, i) => {
+            prot = prot.replace(new RegExp(a.replace('.', '\\.') + '\\.', 'g'), a + '##P' + i + '##');
         });
-        
-        // Split par points, points d'interrogation, exclamation
-        const parts = protected.split(/(?<=[.!?])\s+/);
-        
-        // Restaurer les points dans les abréviations
+        const parts = prot.split(/(?<=[.!?])\s+/);
         return parts.map(s => {
-            let restored = s;
-            abbreviations.forEach((abbr, i) => {
-                restored = restored.replace(new RegExp(abbr + '##POINT' + i + '##', 'g'), abbr + '.');
-            });
-            return restored.trim();
+            let r = s;
+            abbr.forEach((a, i) => { r = r.replace(new RegExp(a + '##P' + i + '##', 'g'), a + '.'); });
+            return r.trim();
         }).filter(s => s.length > 0);
     }
 
-    // Préparer la lecture à partir d'une page
     function prepareSentences(startPageIndex) {
-        const allText = pagesContent.slice(startPageIndex).join(' ');
-        sentences = splitIntoSentences(allText);
+        sentences = [];
+        pageStartIndices = [];
+        for (let i = startPageIndex; i < pagesContent.length; i++) {
+            pageStartIndices.push(sentences.length);
+            sentences = sentences.concat(splitIntoSentences(pagesContent[i]));
+        }
         currentPageIndex = startPageIndex;
         currentSentenceIndex = 0;
     }
 
-    // Obtenir la page actuelle basée sur la position dans les phrases
-    function getCurrentPage() {
-        if (sentences.length === 0) return 1;
-        const textBefore = sentences.slice(0, currentSentenceIndex).join(' ');
-        let charCount = 0;
-        for (let i = 0; i < currentPageIndex; i++) {
-            charCount += pagesContent[i].length;
+    function getCurrentPageFromSentence() {
+        for (let i = pageStartIndices.length - 1; i >= 0; i--) {
+            if (currentSentenceIndex >= pageStartIndices[i]) return currentPageIndex + i + 1;
         }
-        // Estimation grossière mais fonctionnelle
-        const totalChars = pagesContent.slice(currentPageIndex).join(' ').length;
-        const readChars = textBefore.length;
-        return currentPageIndex + 1 + Math.floor((readChars / (totalChars || 1)) * (pagesContent.length - currentPageIndex));
+        return currentPageIndex + 1;
     }
 
-    // Lecture d'une phrase
+    // === Lecture === //
     function speakSentence() {
         if (currentSentenceIndex >= sentences.length) {
             stopReading();
-            status.innerText = '✓ Lecture terminée';
+            status.innerText = '✦ Lecture terminée';
             progressInfo.innerText = '';
             return;
         }
-
         if (isPaused) return;
 
-        const sentence = sentences[currentSentenceIndex];
-        const utter = new SpeechSynthesisUtterance(sentence);
-        
-        const selectedVoice = document.getElementById('voiceSelect').value;
+        const utter = new SpeechSynthesisUtterance(sentences[currentSentenceIndex]);
         const voices = synth.getVoices();
-        utter.voice = voices.find(v => v.name === selectedVoice) || voices[0];
+        const sel = document.getElementById('voiceSelect').value;
+        utter.voice = voices.find(v => v.name === sel) || voices[0];
         utter.rate = parseFloat(document.getElementById('speedRange').value);
-        utter.pitch = 1;
-        
-        // iOS : certains bugs avec le pitch
-        if (isIOS) utter.pitch = 1;
+        utter.pitch = parseFloat(document.getElementById('pitchRange').value);
+        utter.lang = 'fr-FR';
+        utter.volume = 1.0;
 
         utter.onstart = () => {
             isPlaying = true;
-            app.classList.add('is-reading');
-            playBtn.innerHTML = '▶ Reprendre';
+            book.classList.add('reading');
+            audioWave.classList.add('active');
+            playBtn.innerHTML = 'Reprendre';
             pauseBtn.disabled = false;
             stopBtn.disabled = false;
-            status.innerText = '🔊 Lecture en cours...';
-            
-            const currentPage = Math.min(getCurrentPage(), pagesContent.length);
-            progressInfo.innerText = `Page ${currentPage} / ${pagesContent.length}`;
+            status.innerText = '◈ Lecture en cours';
+            const newPage = getCurrentPageFromSentence();
+            progressInfo.innerText = `Page ${newPage} sur ${pagesContent.length}`;
+            if (newPage !== displayedPageNum && newPage <= pdfDoc.numPages) {
+                renderPage(newPage, true);
+            }
         };
 
         utter.onend = () => {
             if (!isPaused) {
                 currentSentenceIndex++;
-                speakSentence();
+                setTimeout(() => { if (!isPaused) speakSentence(); }, 180);
             }
         };
-
         utter.onerror = (e) => {
             if (e.error !== 'canceled' && e.error !== 'interrupted') {
-                console.error('Erreur TTS:', e);
-                status.innerText = '⚠️ Erreur audio';
+                status.innerText = '⚠ Erreur audio';
             }
         };
-
         synth.speak(utter);
     }
 
-    // Démarrer la lecture
     function startReading() {
         if (pagesContent.length === 0) return;
-        
-        // Si on reprend après une pause
         if (isPaused && currentSentenceIndex > 0) {
             isPaused = false;
             speakSentence();
             return;
         }
-
-        // Nouvelle lecture
         synth.cancel();
         isPaused = false;
-        const startPage = parseInt(pageRange.value) - 1;
-        prepareSentences(startPage);
+        prepareSentences(parseInt(pageRange.value) - 1);
         speakSentence();
     }
 
-    // Pause (vraie pause iOS-compatible)
     function pauseReading() {
         isPaused = true;
-        synth.cancel(); // iOS ne gère pas bien pause()
-        app.classList.remove('is-reading');
-        status.innerText = '⏸ Pause';
-        playBtn.innerHTML = '▶ Reprendre';
+        synth.cancel();
+        book.classList.remove('reading');
+        audioWave.classList.remove('active');
+        status.innerText = '◌ En pause';
+        playBtn.innerHTML = 'Reprendre';
         progressInfo.innerText = `Reprise à la phrase ${currentSentenceIndex + 1}`;
     }
 
-    // Arrêt complet
     function stopReading() {
         isPaused = false;
         isPlaying = false;
         synth.cancel();
         currentSentenceIndex = 0;
-        app.classList.remove('is-reading');
-        playBtn.innerHTML = '▶ COMMENCER';
+        book.classList.remove('reading');
+        audioWave.classList.remove('active');
+        playBtn.innerHTML = 'Commencer';
         pauseBtn.disabled = true;
-        status.innerText = '⏹ Arrêté';
+        status.innerText = '◇ Arrêté';
         progressInfo.innerText = '';
     }
 
-    // Event listeners
     playBtn.onclick = startReading;
     pauseBtn.onclick = pauseReading;
     stopBtn.onclick = stopReading;
 
-    // Gestion du verrouillage d'écran iOS
-    if (isIOS && 'AudioContext' in window) {
-        const audioContext = new AudioContext();
-        document.addEventListener('touchstart', () => {
-            if (audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-        }, { once: true });
-    }
-
-    // Empêcher la mise en veille pendant la lecture (iOS)
+    // === Wake lock === //
     let wakeLock = null;
     async function requestWakeLock() {
         if ('wakeLock' in navigator) {
-            try {
-                wakeLock = await navigator.wakeLock.request('screen');
-            } catch (err) {
-                console.log('Wake Lock non supporté');
-            }
+            try { wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {}
         }
     }
+    function releaseWakeLock() { if (wakeLock) { wakeLock.release(); wakeLock = null; } }
 
-    function releaseWakeLock() {
-        if (wakeLock) {
-            wakeLock.release();
-            wakeLock = null;
-        }
-    }
-
-    // Observer l'état de lecture pour le wake lock
     const observer = new MutationObserver(() => {
-        if (app.classList.contains('is-reading')) {
-            requestWakeLock();
-        } else {
-            releaseWakeLock();
-        }
+        if (book.classList.contains('reading')) requestWakeLock();
+        else releaseWakeLock();
     });
-    observer.observe(app, { attributes: true, attributeFilter: ['class'] });
+    observer.observe(book, { attributes: true, attributeFilter: ['class'] });
 
-    // Gestion du mode silencieux iOS
     window.addEventListener('focus', () => {
         if (isPlaying && !isPaused && !synth.speaking) {
-            // Parfois iOS coupe l'audio au retour sur l'app
             setTimeout(() => speakSentence(), 300);
         }
     });
 
-    // Initialisation
-    status.innerText = 'Chargez un PDF pour commencer';
+    // === Effet tilt 3D au toucher === //
+    let tiltTimeout;
+    book.addEventListener('touchstart', (e) => {
+        clearTimeout(tiltTimeout);
+        const rect = book.getBoundingClientRect();
+        const touch = e.touches[0];
+        const x = (touch.clientX - rect.left) / rect.width - 0.5;
+        const y = (touch.clientY - rect.top) / rect.height - 0.5;
+        book.style.transform = `rotateY(${-18 + x * 12}deg) rotateX(${8 - y * 12}deg)`;
+    });
+    book.addEventListener('touchend', () => {
+        tiltTimeout = setTimeout(() => {
+            book.style.transform = '';
+        }, 200);
+    });
 </script>
 
 </body>
